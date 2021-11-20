@@ -5,6 +5,7 @@
 <script>
   var add = (a, b) => a + b;
 
+  // 0 <= x < 인자 의 원소 담긴 배열 리턴
   const range = l => {
     let i = -1;
     let res = [];
@@ -15,14 +16,17 @@
   };
 
   var list = range(4);
-  log(list);
-  log(reduce(add, list));
+  log(list); // 배열 출력 [1,2,3,4]
+  log(reduce(add, list)); // 0 + 1 + 2 + 3
+  // in reduce: 배열 받고 -> 이걸로 이터레이터 생성 -> 이터레이터로 += 계산
+  // 뭐 배열 reduce 메서드였다면 더 좋은 형식이었겠지만!
 </script>
 
 ## 느긋한 L.range
 
 <script>
   const L = {};
+  // 제너레이터로 range() 와 같이 배열 만들어주는 이터러블 생성
   L.range = function* (l) {
     let i = -1;
     while (++i < l) {
@@ -31,14 +35,17 @@
   };
 
   var list = L.range(4);
-  log(list);
-  log(reduce(add, list));
+  log(list); // 이터레이터 출력 (값이 평가되기 전 상태 출력)
+  log(reduce(add, list)); // 0 + 1 + 2 + 3 - 실제로 L.range가 평가되는 시점
+  // next()가 수행되면서 하나하나씩 value 평가
+  // in reduce: 이터레이터 받고 -> 자기자신 호출 (Symbol.iterator() === this) -> 각 value +=
 </script>
 
 <script>
+  // 즉시 평가 vs lazy 평가의 성능 테스트
   function test(name, time, f) {
     console.time(name);
-    while (time--) f();
+    while (time--) f(); // f를 time 만큼 수행
     console.timeEnd(name);
   }
 
@@ -53,12 +60,13 @@
   const take = curry((l, iter) => {
     let res = [];
     for (const a of iter) {
-      res.push(a);
+      res.push(a); // 받은 이터레이터에서 l 만큼의 인자를 앞에서부터 잘라 new arr 리턴!
       if (res.length == l) return res;
     }
     return res;
   });
   console.time('');
+  // curry & go를 통해, 1만개 배열 생성 -> 5개 잘라냄 -> 더함 처리
   go(
     range(10000),
     take(5),
@@ -67,11 +75,16 @@
   console.timeEnd('');
 
   console.time('');
+  // curry & go를 통해, 1만개 이터레이터 생성 -> 5개 잘라냄 -> 더함 처리
   go(
     L.range(10000),
     take(5),
     reduce(add),
     log);
   console.timeEnd('');
+
+  // 바로 배열로 평가하는 1번째보다, 이터레이터로 지연 평가하는 2번째의 경우가 훨씬 효율적
+  // L.range 1 생성 - take 수행 - 2, 3, 4, 5 여기서 take 종료 후 리턴
+  //  요지는 L.range에서 모든 10000만개를 평가 바로 하냐, 그 다음 함수에 따라 lazy 평가 하냐의 차이!!
 </script>
 
