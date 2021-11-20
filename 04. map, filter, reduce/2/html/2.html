@@ -16,10 +16,21 @@
       add,
       map(p => p.price,
         filter(p => p.price < 20000, products))));
+  // 수행: <-- 방향, product - 필터 적용 - 값 뽑아냄 - reduce add
+  // 작성: --> 값을 더하네? - 값 뽑아 내네? - 뽑아내는 값에 조건이 있네?
 
   log(
     reduce(
       add,
       filter(n => n >= 20000,
         map(p => p.price, products))));
+
+  /*
+   * ===
+   * const productPrices = map(p => p.price, products);
+   * const over20000ProductPrices = filter(p => p.price < 20000, productPrices);
+   * const over20000ProductTotalPrice = reduce(add, over20000ProductPrices);
+   */
+
+
 </script>
