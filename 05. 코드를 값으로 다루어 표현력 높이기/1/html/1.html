@@ -16,6 +16,8 @@
       add,
       map(p => p.price,
         filter(p => p.price < 20000, products))));
+
+  // 중첩된 함수로 이뤄진 코드를 읽기좋게 바꾸기!
   console.clear();
 </script>
 
@@ -24,16 +26,21 @@
 ## go, pipe
 
 <script>
+  // 인자를 받음 - args라는 함수가 value인 이터레이터를 받아, 리듀스로 바로 평가 & 값 리턴
   const go = (...args) => reduce((a, f) => f(a), args);
+  // 인자를 받음 - args라는 함수가 value인 이터레이터를 받아, 해당 함수들을 차례로 수행하는 축약된 함수 리턴
+  // 바로 리듀스로 수행하는 go 사이에 하나의 내부함수를 두어 함수형태로 떨어지게 둔다!
+  // 1차: 함수 리스트 받음 -> 2차: 인자들 받음 -> 3차: 2차에서 받은 인자를 1차에서 받은 함수에 넣어 go 실행
   const pipe = (f, ...fs) => (...as) => go(f(...as), ...fs);
 
   go(
-    add(0, 1),
+    add(0, 1), // 첫번때 인자는 seed가 되는 값이어야함
     a => a + 10,
     a => a + 100,
     log);
-  // 111
+  // 111 - go 내부 함수의 순차적 실행 & 축약 (acc)
 
+  // 파이프는 순수 함수로 구성 - 추후 내부 함수때 인자를 받아 함수 평가
   const f = pipe(
     (a, b) => a + b,
     a => a + 10,
@@ -47,12 +54,14 @@
 
 <script>
 
+  // 함수형 처리
   log(
     reduce(
       add,
       map(p => p.price,
         filter(p => p.price < 20000, products))));
 
+  // go 활용 - 함수와 평가 처리할 인자들을 모두 명시!
   go(
     products,
     products => filter(p => p.price < 20000, products),
@@ -60,10 +69,12 @@
     prices => reduce(add, prices),
     log);
 
+  // curry 적용 - 인자를 부족하게 받으면, 평가가 안되는 함수들로 세팅됨
+  // 첫번째 값이 수행되고 다음 함수로 들어가면 평가되면서 다음 함수들이 수행됨
   go(
-    products,
-    filter(p => p.price < 20000),
-    map(p => p.price),
+    products, // 초기 이터레이터 (인자)가 다음 함수로 내려가며, curry함수 평가 ~ 도미노
+    filter(p => p.price < 20000), // filter(p => p.price < 20000)(products)
+    map(p => p.price), // map(p => p.price)(products)
     reduce(add),
     log);
 
@@ -72,7 +83,7 @@
 ## curry
 
 <script>
-
+  // 함수를 값으로 다루면서, 원하는 인자의 갯수가 들어올때 내부 함수들을 평가시키는 함수
   const mult = curry((a, b) => a * b);
   log(mult(3)(2));
 
@@ -86,6 +97,7 @@
 # 함수 조합으로 함수 만들기
 
 <script>
+  // 잘게 나눠진 고차 함수들을 묶어내면서 (평가가 안되니까 함수로 떨어짐) 중복을 제거
   const total_price = pipe(
     map(p => p.price),
     reduce(add));

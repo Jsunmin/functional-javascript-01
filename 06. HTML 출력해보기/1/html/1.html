@@ -11,6 +11,9 @@
 </div>
 
 <script>
+  // 추상화.. - 각각의 기능을 담당하는 함수를 조합하면서 기능 끌어냄..
+  // 다형성.. - 단순 배열 데이터, dom element 등 이터레이터 프로토콜 따르는 곳에선 전부 활용 가능!
+
   const products = [
     {name: '반팔티', price: 15000, quantity: 1, is_selected: true},
     {name: '긴팔티', price: 20000, quantity: 2, is_selected: false},
@@ -21,11 +24,17 @@
 
   const add = (a, b) => a + b;
 
+  // curry: iter 안받으면 go 함수 평가X
+  // go: 이터레이터를 초기값으로 함수를 순차적으로 적용함
+  // map -> reduce
   const sum = curry((f, iter) => go(
     iter,
     map(f),
-    reduce(add)));
+    reduce(add)
+    )
+  );
 
+  // 커링을 통해 이터레이터를 받으면 실행되도록 세팅 (map 에서 처리할 함수를 미리 내려줌)
   const total_quantity = sum(p => p.quantity);
 
   const total_price = sum(p => p.price * p.quantity);
@@ -50,6 +59,7 @@
       `))}
       <tr>
         <td colspan="3">합계</td>
+        <!-- 만들어놓은 함수에 이터레이터 인자를 내려주면서 함수 평가! -->
         <td>${total_quantity(filter(p => p.is_selected, products))}</td>
         <td>${total_price(filter(p => p.is_selected, products))}</td>
       </tr>

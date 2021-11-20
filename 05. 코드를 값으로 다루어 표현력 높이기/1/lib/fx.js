@@ -1,6 +1,8 @@
 const log = console.log;
 
 const curry = f =>
+  // 함수 리턴 - 나머지 인자의 길이가 2개 이상이면 즉시실행
+  //  아니면, 추후에 인자 받아 실행하는 내부함수 리턴
   (a, ..._) => _.length ? f(a, ..._) : (..._) => f(a, ..._);
 
 const map = curry((f, iter) => {
@@ -29,3 +31,12 @@ const reduce = curry((f, acc, iter) => {
   }
   return acc;
 });
+
+
+module.exports = {
+  log,
+  curry,
+  map,
+  filter,
+  reduce,
+}
