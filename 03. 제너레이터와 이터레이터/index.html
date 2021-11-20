@@ -6,11 +6,13 @@
 <script>
   function* gen() {
     yield 1;
-    if (false) yield 2;
+    if (false) yield 2; // 순회 값을 문장으로 표현할 수 있음
+    // ~ 어떤 값이나 상태도 순회 값으로 만들 수 있음 -> 어떠한 값도 순회할 수 있도록하는 다형성 제공
     yield 3;
+    // return 100; - done true
   }
 
-  let iter = gen();
+  let iter = gen(); // 제너레이터로 생성한 이터러블 (&이터레이터)
   log(iter[Symbol.iterator]() == iter);
   log(iter.next());
   log(iter.next());
@@ -24,10 +26,26 @@
 # odds
 
 <script>
+  /*
+   * 생성자(Generator) 함수는 실행이 연속적이지 않은 하나의 함수를 작성함으로서 개발자가 iterative algorithm을 정의할 수 있게 해줍니다.
+      ( = 기존에 well-formed 이터러블에서 [Symbol.iterator](), next()메서드를 작성하지 않고, yield로 바로 활용 가능! )
+   *
+   *   생성자 함수가 최초로 호출될 때, 함수 내부의 어떠한 코드도 실행되지 않고, 대신 생성자라고 불리는 반복자 타입을 반환
+   *   생성자의 next 메소드를 호출함으로서 어떤 값이 소비되면, 생성자 함수는 yield 키워드를 만날 때까지 실행
+   *
+   *   생성자 함수는 원하는 만큼 호출될 수 있고, 매번 새로운 생성자를 반환. 하지만, 각 생성자는 단 한 번만 순회될 수 있음
+   */
+
+  // 문장으로 표현한 무한 수열 + 1;
   function* infinity(i = 0) {
-    while (true) yield i++;
+    // log(i) ~ 최초 실행
+    while (true) {
+      yield i++; // ~ 이터러블로 떨어지고 나서 next시 실행됨 (while 내부에서 새로운 yield!)
+    }
+    // i는 클로저로 인해 외부함수 값으로 기억됨! while에서 참조 & 수정하며 yield 수행
   }
 
+  // 문장으로 표현한 특정 수까지만 동작하는 이터레이터;
   function* limit(l, iter) {
     for (const a of iter) {
       yield a;
@@ -36,7 +54,9 @@
   }
 
   function* odds(l) {
+    // l 만큼 작동하는 이터레이터 실행 > 넘겨준 이터레이터는 1부터 시작하는 무한 수열 이터레이터
     for (const a of limit(l, infinity(1))) {
+      // 이터레이터 value 홀수시 log & next
       if (a % 2) yield a;
     }
   }
@@ -58,15 +78,15 @@
 # for of, 전개 연산자, 구조 분해, 나머지 연산자
 
 <script>
-  log(...odds(10));
+  log(...odds(10)); // 전개 연산자
   log([...odds(10), ...odds(20)]);
 
-  const [head, ...tail] = odds(5);
+  const [head, ...tail] = odds(5); // 구조 분해
   log(head);
   log(tail);
 
   const [a, b, ...rest] = odds(10);
   log(a);
   log(b);
-  log(rest);
+  log(rest); // 나머지 연산
 </script>
