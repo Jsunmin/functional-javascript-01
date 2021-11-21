@@ -1,7 +1,6 @@
 <script src="../lib/fx.js"></script>
 <script>
   // ## L.map + take로 map 만들기
-
   L.map = curry(function* (f, iter) {
     for (const a of iter) {
       yield f(a);
@@ -10,7 +9,7 @@
 
   const takeAll = take(Infinity);
 
-  const map = curry(pipe(L.map, takeAll));
+  const map = curry(pipe(L.map, takeAll)); // pipe를 통해 받은 인자를 그대로 L.map 에 넘겨줌 - 내부함수와 이터레이터
 
   log(map(a => a + 10, L.range(4)));
 

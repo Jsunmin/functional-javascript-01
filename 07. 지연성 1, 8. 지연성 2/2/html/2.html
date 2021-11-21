@@ -8,25 +8,29 @@
 ### L.map
 
 <script>
-  // L.map = function *(f, iter) {
-  //   for (const a of iter) yield f(a);
-  // };
-  // var it = L.map(a => a + 10, [1, 2, 3]);
-  // log(it.next());
-  // log(it.next());
-  // log(it.next());
+  L.map = function *(f, iter) {
+    // 내부함수를 받아서, iter 원소 처리후 리턴
+    for (const a of iter) yield f(a);
+  };
+  var it = L.map(a => a + 10, [1, 2, 3]);
+  // it은 제너레이터로 생성한 이터러블(이터레이터) 아직 평가된 것 zero!
+  log(it.next());
+  log(it.next());
+  log(it.next()); // next로 원소 평가할 때마다 값이 하나씩 수행됨
+  // 전부 평가된 배열을 얻으려면, [...it] 을 활용해야겠지?!
 </script>
 
 ### L.filter
 
 <script>
-  // L.filter = function *(f, iter) {
-  //   for (const a of iter) if (f(a)) yield a;
-  // };
-  // var it = L.filter(a => a % 2, [1, 2, 3, 4]);
-  // log(it.next());
-  // log(it.next());
-  // log(it.next());
+  L.filter = function *(f, iter) {
+    // f 조건 true인 경우에만 값 지연 평가!
+    for (const a of iter) if (f(a)) yield a;
+  };
+  var it = L.filter(a => a % 2, [1, 2, 3, 4]);
+  log(it.next());
+  log(it.next());
+  log(it.next()); // 마찬가지로 yield는 3번만 (평가를 3번 요청!)
 </script>
 
 
@@ -46,7 +50,7 @@
     let res = [];
     iter = iter[Symbol.iterator]();
     let cur;
-    while (!(cur = iter.next()).done) {
+    while (!(cur = iter.next()).done) { // done false 까지 수행
       const a = cur.value;
       res.push(f(a));
     }
@@ -91,6 +95,14 @@
     return acc;
   });
 
+  /*
+   * 즉시평가
+   *  range 100000으로 원소 10만개짜리 배열 생성
+   *  10만개 인자로 받아 map으로 10만개 처리
+   *  10만개 인자로 받아 filter로 10만개 처리
+   *  5만개 인자로 받아 10개 받아 처리후
+   *  리턴
+   */
   // console.time('');
   // go(range(100000),
   //   map(n => n + 10),
@@ -130,6 +142,20 @@
     }
   });
 
+  /*
+   * 지연평가
+   *  take부터 실행 iterator 인자로 받아, next() 전에 상위 함수인 filter로
+   *  filter 실행, 평가 지연된 상위 이터레이터로 넘어감 next 전에 map으로 
+   *  ... map -> range 까지 도달
+   *  
+   *  range에서 내부 로직 돌면서 yield ~ 하나의 값 yield -> map 1원소 yield -> filter 1원소 yield -> true면 take / false면 종료
+   *   - 한 원소에 대한 처리로 수행로직이 바뀜!
+   *   - take에서 조건이 충족되는 순간 모든 지연 평가 멈춤 (배열이 전부 안만들어지고 끝남!)
+   *
+   *  구현체의 지연평가를 통해, 이터레이터 프로토콜을 준수하는 여러 모듈간의 최적화된 조합을 만드렁낼 수 있음
+   */
+
+  // 전체 배열에 대한 처리로 작동하는 즉시 평가 (가로 평가) vs 한 원소에 대한 평가로 작동하는 지연 평가 (세로 평가)
   // [0, 1, 2, 3, 4, 5, 6, 7, 8...]
   // [10, 11, 12, ...]
   // [11, 13, 15 ..]
@@ -165,17 +191,23 @@
 ### reduce
 
 <script>
+  // map, filter - 이터러블한 데이터의 수정 - 지연성을 가질 수 있음 (원소별 세로평가가 가능함)
+  // reduce, take - 결과를 생성 - 실제 평가가 이뤄져야 함 (take도 비슷한 느낌)
+
+  // 실제 적용 - api request query 가져오는 기능
   L.entries = function* (obj) {
     for (const k in obj) yield [k, obj[k]];
   };
 
+  // 이터러블을 활용해 만든 join
   const join = curry((sep = ',', iter) =>
     reduce((a, b) => `${a}${sep}${b}`, iter));
 
   const queryStr = pipe(
-    L.entries,
-    L.map(([k, v]) => `${k}=${v}`),
-    join('&'));
+    L.entries, // obj로 부터 key value를 하나씩 가져옴 (지연 평가)
+    L.map(([k, v]) => `${k}=${v}`), // str 처리 ( map과 달리, 지연평가 할 수 있게끔!)
+    join('&') // 각 str & 연결 (지연평가하기 때문에 마찬가지로 - 원소마다 next()를 수행하면서 값 처리)
+  );
 
   log(queryStr({limit: 10, offset: 10, type: 'notice'}));
 
@@ -186,7 +218,7 @@
   //   yield 13;
   // }
   //
-  // log(join(' - ', a()));
+  // log(join(' - ', a())); - 이터러블 프로토콜을 따르는 a()를 지연평가하면서 join 값 평가!
 </script>
 
 ### take, find
@@ -205,14 +237,15 @@
 
   const find = curry((f, iter) => go(
     iter,
-    L.filter(f),
-    take(1),
-    ([a]) => a));
+    L.filter(f), // 지연필터로 특정 결과값 뽑아냄
+    take(1), // 해당 배열중 1번째 것 리턴 - 마찬가지로 하나의 조건 파악되면 그대로 종료! (지연평가!)
+    ([a]) => a) // 배열에서 꺼내줌
+  );
 
   log(find(u => u.age < 30)(users));
 
   go(users,
-    L.map(u => u.age),
+    L.map(u => u.age), // 지연평가 map / map 보다 효율적!
     find(n => n < 30),
     log);
 </script>
