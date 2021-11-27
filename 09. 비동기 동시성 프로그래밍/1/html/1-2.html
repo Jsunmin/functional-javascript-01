@@ -5,7 +5,7 @@
 <script>
   go(Promise.resolve(1),
     a => a + 10,
-    a => Promise.reject('error~~'),
+    a => Promise.reject('error~~'), // 프로미스로 다루면서 에러 발생시 여기서 종료!
     a => console.log('----'),
     a => a + 1000,
     a => a + 10000,

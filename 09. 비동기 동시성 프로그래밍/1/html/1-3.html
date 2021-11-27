@@ -3,9 +3,11 @@
 ## promise.then의 중요한 규칙
 
 <script>
-  Promise.resolve(Promise.resolve(1)).then(function (a) {
+  // then 메서드로 받아온 인자 (리턴값)은 프로미스 객체가 아님!
+  Promise.resolve(Promise.resolve(1)).then(function (a) { // 프로미스 체이닝이 걸려 있어도 then으로 한번에 처리 가능!
     log(a);
   });
 
+  // 여러 중첩된 프로미스여도 프로미스 가장 안쪽에 있는 값을 꺼내씀 ~ 1
   new Promise(resolve => resolve(new Promise(resolve => resolve(1)))).then(log);
 </script>

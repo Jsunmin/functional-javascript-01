@@ -5,10 +5,12 @@
 ## 일급
 
 <script>
+  // 콜백 형식 처리
   function add10(a, callback) {
     setTimeout(() => callback(a + 10), 100);
   }
 
+  // 100ms 마다 15, 25 콘솔
   var a = add10(5, res => {
     add10(res, res => {
       add10(res, res => {
@@ -19,6 +21,7 @@
 
   // log(a);
 
+  // 프로미스 처리 ~ 프로미스 객체를 리턴함! (return이란 행위가 붙는다!)
   function add20(a) {
     return new Promise(resolve => setTimeout(() => resolve(a + 20), 100));
   }
@@ -34,23 +37,30 @@
 ## 일급 활용
 
 <script>
+  // promise는 콜백헬의 탈출만을 위한 목적이 아니라. 비동기 상황을 일급 값으로 다룰 수 있게 처리하는 효과!
+  // 프로미스로 만들어진 인스턴스는 3 일급값(pending, resolved, rejected)을 가짐 - return new Promise(..)로 전달
+  //  콜백: 비동기 함수 평가시, 콜백에 대한 컨텍스트만 남음 (콜백 호출만 됨)
+  //  프로미스: 함수를 평가했을 때, 즉시 비동기의 상태/결과를 담은 프로미스를 리턴 ~ then으로 프로미스값 (비동기 상황/결과)를 연결지어 처리
+  
   const delay100 = a => new Promise(resolve =>
     setTimeout(() => resolve(a), 100));
 
-  const go1 = (a, f) => a instanceof Promise ? a.then(f) : f(a);
+  const go1 = (a, f) => a instanceof Promise ? a.then(f) : f(a); // 인자가 비동기상황(promise)이면 resolve후 콜백 적용 | 아니면 바로 적용
   const add5 = a => a + 5;
 
   const n1 = 10;
   // log(go1(go1(n1, add5), log));
 
-  const n2 = delay100(10);
+  const n2 = delay100(10); // promise 객체가 지속적으로 이어짐 ( n2 = promise{<pending>} ) ~ then()으로 연결하면서 처리
   // log(go1(go1(n2, add5), log));
 </script>
 
 ## Composition
 
 <script type="module">
-  // f . g
+  // 비동기 상황에서 함수합성을 도와주는 프로미스 ~ 비동기 값을 대상으로, 연속적인 함수실행을 처리 ~ 모나드
+  // 모나드: map 등을 통해, 컨테이너(배열)안의 원소들 (없을수도 있음)을 대상으로 함수를 적용시킴 ~ 체이닝으로 연속 조합도 가능!
+  // f . g ~ x -> g적용 -> f적용
   // f(g(x))
 
   const g = a => a + 1;
@@ -59,9 +69,13 @@
   // log(f(g(1)));
   // log(f(g()));
 
+  // 컨테이너에 들어 있는 1을 g적용 -> f적용
   Array.of(1).map(g).map(f)/*.forEach(r => log(r))*/;
+
+  // 모나드형태로 arr대상으로 함수를 적용하면, 빈배열을 통해 그 후 작업이 적용안됨!
   [].map(g).map(f)/*.forEach(r => log(r))*/;
 
+  // 프로미스느 then()을 통해 함수를 합성함 - 비동기적인 상황에 대해 함수 합성
   Promise.resolve(2).then(g).then(f)/*.then(r => log(r))*/;
   new Promise(resolve =>
     setTimeout(() => resolve(2), 100)
@@ -71,9 +85,12 @@
 ## Kleisli Composition
 
 <script>
+  // 클레이슬리 조합: 오류가 있을 수 있는 상황에서의 함수합성을 위한 하나의 규칙!
+  //  외부세상 및 효과의 상황에 의해 언제든 함수합성에서 오류가 발생할 수 있음..
   // f . g
-  // f(g(x)) = f(g(x))
-  // f(g(x)) = g(x)
+  // f(g(x)) = f(g(x)) - 같은 함수의 실행은 항상 같은 결과를 내야하지만 (순수함수) 현실은 ㄴㄴ..
+  // f(g(x)) = g(x) - g 또는 x에서 에러가 난 경우, f를 합성한 결과처럼 리턴
+  //   => 잘못된 결과출력시 그대로 함수조합 스탑 (해당 값이 다음함수에서 어떤 사이드이펙트 가져올지 모름!) = g(x)
 
   var users = [
     {id: 1, name: 'aa'},
@@ -89,13 +106,14 @@
 
   // const fg = id => f(g(id));
 
+  // 함수 동작중 에러가 나면 catch를 수행하면서 그 다음 함수조합 수행X
   const fg = id => Promise.resolve(id).then(g).then(f).catch(a => a);
 
   fg(2).then(log);
 
   setTimeout(function () {
     users.pop();
-    users.pop();
+    users.pop(); // 잘못된 상황 야기..
     fg(2).then(log);
   }, 10);
 </script>

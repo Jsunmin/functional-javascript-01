@@ -14,12 +14,15 @@ const reduce = curry((f, acc, iter) => {
   } else {
     iter = iter[Symbol.iterator]();
   }
+  // go1을 통해, 첫값이 promise면 풀어서 전달 / 아니면 그대로
+  // 재귀함수인 내부함수
   return go1(acc, function recur(acc) {
     let cur;
-    while (!(cur = iter.next()).done) {
+    while (!(cur = iter.next()).done) { // 이터러블 순회가능하면 넘어가면서
       const a = cur.value;
-      acc = f(acc, a);
-      if (acc instanceof Promise) return acc.then(recur);
+      acc = f(acc, a); // 값 처리
+      // 프로미스 인스턴스읜 경우 resolved 값에 내부함수 적용!
+      if (acc instanceof Promise) return acc.then(recur); // 이러면서 비동기 처리에 대한 promise chain을 끊어냄!
     }
     return acc;
   });
