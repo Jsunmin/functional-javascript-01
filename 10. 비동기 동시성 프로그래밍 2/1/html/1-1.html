@@ -3,15 +3,16 @@
 ## 지연 평가 + Promise - L.map, map, take
 
 <script>
+  // 기존에 지연평가로 만든 함수에 프로미스 적용
   /*  go(
       [1, 2, 3],
       L.map(a => Promise.resolve(a + 10)),
-      take(2),
+      take(2), // 프로미스 지원하도록 take 수정해서 동작
       log);
 
     go(
       [Promise.resolve(1), Promise.resolve(2), Promise.resolve(3)],
-      L.map(a => a + 10),
+      L.map(a => a + 10), // 프로미스 지원하도록 L.map 수정해서 동작
       take(2),
       log);
 
@@ -23,7 +24,7 @@
 
     go(
       [1, 2, 3],
-      map(a => Promise.resolve(a + 10)),
+      map(a => Promise.resolve(a + 10)), // == L.map & takeAll
       log);
 
     go(
@@ -68,6 +69,7 @@
 </script>
 
 <script>
+  // 비동기와 지연평가를 조합해, 비동기 동시성 작업 제어 -> 필요한 부분까지만 작동시켜 훨씬 효율적!.
   go([1, 2, 3, 4, 5, 6, 7, 8],
     L.map(a => {
       log(a);
@@ -77,7 +79,7 @@
       log(a);
       return new Promise(resolve => setTimeout(() => resolve(a % 2), 1000))
     }),
-    take(2),
+    take(2), // 비동기 제어가 take2를 만족할때까지 한 원소 (한콜)씩 작동함
     reduce(add),
     log);
 </script>
